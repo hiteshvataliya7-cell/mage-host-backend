@@ -3,30 +3,37 @@ import fetch from "node-fetch";
 
 const app = express();
 
-app.get("/photos/:id", async (req, res) => {
+app.get("/photos", async (req, res) => {
   try {
-    const imageId = req.params.id;
-    // AWS object URL — replace with your own if needed
-    const s3Url = `https://tokenride-photos.s3.eu-north-1.amazonaws.com/${imageId}`;
+    const seed = req.query.seed; // frontend ma ?seed=abcde12345 ave che
 
-    const response = await fetch(s3Url);
-
-    if (!response.ok) {
-      return res.status(response.status).send("Error fetching image");
+    // Validation: seed must be 5 letters + 5 digits
+    if (!seed || !/^[a-zA-Z]{5}\d{5}$/.test(seed)) {
+      return res.status(400).json({ error: "Invalid or missing seed" });
     }
 
-    // Stream image as response
-    res.set("Content-Type", response.headers.get("content-type"));
-    response.body.pipe(res);
+    // Example image generation logic (change to your own logic or AWS mapping)
+    const s3Url = `https://tokenride-photos.s3.eu-north-1.amazonaws.com/${seed}.jpg`;
+
+    const response = await fetch(s3Url);
+    if (!response.ok) {
+      return res.status(404).json({ error: "Image not found on S3" });
+    }
+
+    // Return JSON response with image URLs
+    res.json({
+      seed,
+      images: [s3Url],
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Server Error");
+    console.error("❌ Server error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
-// ✅ Use the port Render provides OR fallback to local 3000
+// ✅ Use Render’s port or fallback to 3000
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log(`Proxy running on port ${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
 });
