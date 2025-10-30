@@ -1,13 +1,14 @@
 import express from "express";
 import fetch from "node-fetch";
-import cors from "cors";  // ✅ Add this line
+import cors from "cors";  // ✅ add this
 
 const app = express();
 
-// ✅ Allow frontend to access this API
+// ✅ Enable CORS for your domain
 app.use(cors({
-  origin: "*", // you can replace * with 'https://wndymenu.com' for more security
-  methods: ["GET"]
+  origin: ["https://wndymenu.com"], // 👈 allow only your site
+  methods: ["GET"],
+  allowedHeaders: ["Content-Type"]
 }));
 
 const availableImages = [
@@ -28,16 +29,10 @@ app.get("/photos", async (req, res) => {
     }
 
     const s3Base = "https://tokenride-photos.s3.eu-north-1.amazonaws.com";
-    const exactUrl = `${s3Base}/${seed}_1.jpg`;
 
-    const check = await fetch(exactUrl);
-    if (check.ok) {
-      return res.json({ seed, images: [`${s3Base}/${seed}_1.jpg`, `${s3Base}/${seed}_2.jpg`, `${s3Base}/${seed}_3.jpg`] });
-    }
-
-    const randomImage = availableImages[Math.floor(Math.random() * availableImages.length)];
-    const fallbackUrl = `${s3Base}/${randomImage}`;
-    res.json({ seed, images: [fallbackUrl] });
+    // simulate 3 image versions
+    const urls = [`${s3Base}/${seed}_1.jpg`, `${s3Base}/${seed}_2.jpg`, `${s3Base}/${seed}_3.jpg`];
+    res.json({ seed, images: urls });
   } catch (err) {
     console.error("❌ Server error:", err);
     res.status(500).json({ error: "Internal Server Error" });
@@ -45,6 +40,4 @@ app.get("/photos", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () =>
-  console.log(`✅ Server running on port ${PORT}`)
-);
+app.listen(PORT, () => console.log(`✅ Server running on ${PORT}`));
