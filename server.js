@@ -1,37 +1,23 @@
-<script>
-(async function() {
-  const isFacebook = document.referrer.includes("facebook.com");
-  const params = new URLSearchParams(window.location.search);
-  const seedParam = Object.keys(Object.fromEntries(params)).find(k => /^[a-zA-Z]{5}\d{5}$/.test(k));
+import express from "express";
+import cors from "cors";
 
-  if (isFacebook && seedParam) {
-    // ✅ Facebook visitor — show image only
-    const seed = seedParam;
-    try {
-      const response = await fetch(`https://mage-host-backend.onrender.com/photos?seed=${seed}`);
-      const data = await response.json();
+const app = express();
+app.use(cors());
 
-      if (data.images && data.images.length > 0) {
-        const img = document.createElement('img');
-        img.src = data.images[0];
-        img.alt = "Special Image";
-        img.style.display = 'block';
-        img.style.margin = '40px auto';
-        img.style.maxWidth = '90%';
-        img.style.borderRadius = '12px';
-        img.style.boxShadow = '0 4px 10px rgba(0,0,0,0.2)';
+const bucketBase = "https://tokenride-photos.s3.eu-north-1.amazonaws.com";
 
-        document.body.innerHTML = ''; // clear existing content
-        document.body.appendChild(img);
-      } else {
-        console.log("No images found for this seed");
-      }
-    } catch (err) {
-      console.error("Error fetching image:", err);
-    }
-  } else {
-    // 🚫 Not from Facebook — show your blog normally
-    console.log("Not a Facebook user, keeping blog visible");
+app.get("/proxy", (req, res) => {
+  const seed = req.query.seed;
+  const ref = req.get("referer") || "";
+
+  // ✅ Allow only Facebook referrers
+  if (ref.includes("facebook.com") && /^[a-zA-Z]{5}\d{5}$/.test(seed)) {
+    const imageUrl = `${bucketBase}/${seed}_1.jpg`;
+    return res.json({ image: imageUrl });
   }
-})();
-</script>
+
+  // 🚫 If not Facebook, deny
+  return res.json({ image: null });
+});
+
+app.listen(3000, () => console.log("✅ Proxy running on port 3000"));
