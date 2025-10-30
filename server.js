@@ -3,34 +3,40 @@ import fetch from "node-fetch";
 
 const app = express();
 
+// Random fallback images list
 const availableImages = [
-  "abcde12345_1.jpg",
-  "abcde12345_2.jpg",
-  "abcde12345_3.jpg",
-  "fghij67890_1.jpg",
-  "fghij67890_2.jpg",
+  "sample1.jpg",
+  "sample2.jpg",
+  "sample3.jpg",
+  "sample4.jpg",
+  "sample5.jpg"
 ];
 
 app.get("/photos", async (req, res) => {
   try {
     const seed = req.query.seed;
-    if (!seed || !/^[a-zA-Z]{5}\d{5}$/.test(seed)) {
+    const regex = /^[a-zA-Z]{5}\d{5}$/;
+
+    // 🔍 Validate 5 letters + 5 digits
+    if (!seed || !regex.test(seed)) {
       return res.status(400).json({ error: "Invalid or missing seed" });
     }
 
     const s3Base = "https://tokenride-photos.s3.eu-north-1.amazonaws.com";
     const exactUrl = `${s3Base}/${seed}_1.jpg`;
 
+    // ✅ Check if exact image exists
     const check = await fetch(exactUrl);
     if (check.ok) {
       return res.json({ seed, image: exactUrl });
     }
 
+    // ❌ If not found → random fallback
     const randomImage =
       availableImages[Math.floor(Math.random() * availableImages.length)];
-    const s3Url = `${s3Base}/${randomImage}`;
+    const fallbackUrl = `${s3Base}/${randomImage}`;
 
-    res.json({ seed, image: s3Url });
+    res.json({ seed, image: fallbackUrl });
   } catch (err) {
     console.error("❌ Server error:", err);
     res.status(500).json({ error: "Internal Server Error" });
