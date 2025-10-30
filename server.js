@@ -6,20 +6,16 @@ const app = express();
 app.get("/photos/:id", async (req, res) => {
   try {
     const imageId = req.params.id;
-    // tamaru AWS object URL aahi replace karo
+    // AWS object URL — replace with your own if needed
     const s3Url = `https://tokenride-photos.s3.eu-north-1.amazonaws.com/${imageId}`;
 
-    const response = await fetch(s3Url, {
-      headers: {
-        // AWS credentials ya signed URL ni jarur hoy to aa jagyae add kari shakay
-      },
-    });
+    const response = await fetch(s3Url);
 
     if (!response.ok) {
       return res.status(response.status).send("Error fetching image");
     }
 
-    // image stream as response
+    // Stream image as response
     res.set("Content-Type", response.headers.get("content-type"));
     response.body.pipe(res);
   } catch (err) {
@@ -28,4 +24,9 @@ app.get("/photos/:id", async (req, res) => {
   }
 });
 
-app.listen(3000, () => console.log("Proxy running on port 3000"));
+// ✅ Use the port Render provides OR fallback to local 3000
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Proxy running on port ${PORT}`);
+});
