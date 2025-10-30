@@ -18,7 +18,6 @@ app.get("/photos", async (req, res) => {
       return res.status(400).json({ error: "Invalid or missing seed" });
     }
 
-    // Try exact match first
     const s3Base = "https://tokenride-photos.s3.eu-north-1.amazonaws.com";
     const exactUrl = `${s3Base}/${seed}_1.jpg`;
 
@@ -27,7 +26,6 @@ app.get("/photos", async (req, res) => {
       return res.json({ seed, image: exactUrl });
     }
 
-    // If not found → random fallback
     const randomImage =
       availableImages[Math.floor(Math.random() * availableImages.length)];
     const s3Url = `${s3Base}/${randomImage}`;
