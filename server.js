@@ -4,6 +4,8 @@ import cors from "cors";
 
 const app = express();
 app.use(cors());
+import cors from "cors";   // top ma import karo
+app.use(cors());           // Express middleware add karo
 
 const availableImages = [
   "abcd12345_1.jpg",
@@ -38,3 +40,4 @@ app.get("/photos", async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+
