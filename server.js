@@ -3,24 +3,37 @@ import fetch from "node-fetch";
 
 const app = express();
 
+// ✅ Replace with your actual uploaded image names
+const availableImages = [
+  "abcd12345_1.jpg",
+  "abcd12345_2.jpg",
+  "abcd12345_3.jpg",
+  "abcde12345_1.jpg",
+  "67890.jpg"
+];
+
 app.get("/photos", async (req, res) => {
   try {
-    const seed = req.query.seed; // frontend ma ?seed=abcde12345 ave che
+    const seed = req.query.seed;
 
-    // Validation: seed must be 5 letters + 5 digits
+    // Validate seed format (5 letters + 5 digits)
     if (!seed || !/^[a-zA-Z]{5}\d{5}$/.test(seed)) {
       return res.status(400).json({ error: "Invalid or missing seed" });
     }
 
-    // Example image generation logic (change to your own logic or AWS mapping)
-    const s3Url = `https://tokenride-photos.s3.eu-north-1.amazonaws.com/${seed}.jpg`;
+    // Pick random image from list
+    const randomImage = availableImages[Math.floor(Math.random() * availableImages.length)];
 
+    // Construct full URL
+    const s3Url = `https://tokenride-photos.s3.eu-north-1.amazonaws.com/${randomImage}`;
+
+    // Verify it exists
     const response = await fetch(s3Url);
     if (!response.ok) {
       return res.status(404).json({ error: "Image not found on S3" });
     }
 
-    // Return JSON response with image URLs
+    // Return JSON
     res.json({
       seed,
       images: [s3Url],
@@ -31,9 +44,7 @@ app.get("/photos", async (req, res) => {
   }
 });
 
-// ✅ Use Render’s port or fallback to 3000
 const PORT = process.env.PORT || 3000;
-
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
