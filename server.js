@@ -1,54 +1,40 @@
-<script>
-document.addEventListener("DOMContentLoaded", async function () {
+import express from "express";
+import fetch from "node-fetch";
+import cors from "cors";
+
+const app = express();
+app.use(cors());
+
+const availableImages = [
+  "abcd12345_1.jpg",
+  "abcd12345_2.jpg",
+  "abcd12345_3.jpg",
+  "abcde12345_1.jpg",
+  "default.jpg"
+];
+
+app.get("/photos", async (req, res) => {
   try {
-    const params = new URLSearchParams(window.location.search);
-    const seedParam = Object.keys(Object.fromEntries(params)).find(k =>
-      /^[a-zA-Z]{5}\d{5}$/.test(k)
-    );
+    const seed = req.query.seed;
+    const regex = /^[a-zA-Z]{5}\d{5}$/;
 
-    if (!seedParam) {
-      console.log("ℹ No valid parameter found — showing normal blog");
-      return;
+    if (!seed || !regex.test(seed)) {
+      return res.status(400).json({ error: "Invalid or missing seed" });
     }
 
-    const seed = seedParam;
-    const res = await fetch(https://mage-host-backend.onrender.com/photos?seed=${seed});
-    const data = await res.json();
+    const s3Base = "https://tokenride-photos.s3.eu-north-1.amazonaws.com";
+    const images = [
+      `${s3Base}/${seed}_1.jpg`,
+      `${s3Base}/${seed}_2.jpg`,
+      `${s3Base}/${seed}_3.jpg`
+    ];
 
-    if (!data.images || !data.images.length) {
-      console.warn("⚠ No images found on server");
-      return;
-    }
-
-    // ✅ create wrapper for full-page image overlay
-    const overlay = document.createElement("div");
-    overlay.style.position = "absolute";
-    overlay.style.top = "0";
-    overlay.style.left = "0";
-    overlay.style.width = "100%";
-    overlay.style.zIndex = "10";
-    overlay.style.pointerEvents = "none"; // clicks pass through
-    overlay.style.display = "flex";
-    overlay.style.justifyContent = "center";
-
-    const img = document.createElement("img");
-    img.src = data.images[0];
-    img.alt = "Special Image";
-    img.style.width = "100%";
-    img.style.height = "auto";
-    img.style.display = "block";
-    img.style.pointerEvents = "none"; // allow transparent click
-    overlay.appendChild(img);
-    document.body.insertBefore(overlay, document.body.firstChild);
-
-    // ✅ handle scroll syncing (image scrolls naturally with blog)
-    window.addEventListener("scroll", () => {
-      overlay.style.transform = translateY(${-window.scrollY}px); // move image with page
-    });
-
-    console.log("✅ Image loaded — scroll & click synced with blog");
+    res.json({ seed, images });
   } catch (err) {
-    console.error("❌ Error:", err);
+    console.error("❌ Server error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
-</script>
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
