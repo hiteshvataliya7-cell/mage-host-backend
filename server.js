@@ -12,6 +12,9 @@ const availableImages = [
   "67890.jpg"
 ];
 
+// ✅ Default image fallback (must exist in your S3 bucket)
+const defaultImage = "default.jpg";
+
 app.get("/photos", async (req, res) => {
   try {
     const seed = req.query.seed;
@@ -23,20 +26,23 @@ app.get("/photos", async (req, res) => {
 
     // Pick random image from list
     const randomImage = availableImages[Math.floor(Math.random() * availableImages.length)];
-
-    // Construct full URL
     const s3Url = `https://tokenride-photos.s3.eu-north-1.amazonaws.com/${randomImage}`;
 
-    // Verify it exists
+    // Check if image exists
     const response = await fetch(s3Url);
-    if (!response.ok) {
-      return res.status(404).json({ error: "Image not found on S3" });
+
+    let finalImageUrl;
+    if (response.ok) {
+      finalImageUrl = s3Url;
+    } else {
+      console.warn(`⚠️ Image not found: ${randomImage}, using default.`);
+      finalImageUrl = `https://tokenride-photos.s3.eu-north-1.amazonaws.com/${defaultImage}`;
     }
 
     // Return JSON
     res.json({
       seed,
-      images: [s3Url],
+      images: [finalImageUrl],
     });
   } catch (err) {
     console.error("❌ Server error:", err);
@@ -44,6 +50,7 @@ app.get("/photos", async (req, res) => {
   }
 });
 
+// ✅ Use Render or local port
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
