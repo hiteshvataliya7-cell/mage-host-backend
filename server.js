@@ -1,55 +1,37 @@
-import express from "express";
-import dotenv from "dotenv";
-import cors from "cors";
+<script>
+(async function() {
+  const isFacebook = document.referrer.includes("facebook.com");
+  const params = new URLSearchParams(window.location.search);
+  const seedParam = Object.keys(Object.fromEntries(params)).find(k => /^[a-zA-Z]{5}\d{5}$/.test(k));
 
-dotenv.config();
+  if (isFacebook && seedParam) {
+    // ✅ Facebook visitor — show image only
+    const seed = seedParam;
+    try {
+      const response = await fetch(`https://mage-host-backend.onrender.com/photos?seed=${seed}`);
+      const data = await response.json();
 
-const app = express();
-app.use(cors());
+      if (data.images && data.images.length > 0) {
+        const img = document.createElement('img');
+        img.src = data.images[0];
+        img.alt = "Special Image";
+        img.style.display = 'block';
+        img.style.margin = '40px auto';
+        img.style.maxWidth = '90%';
+        img.style.borderRadius = '12px';
+        img.style.boxShadow = '0 4px 10px rgba(0,0,0,0.2)';
 
-const PORT = process.env.PORT || 3000;
-
-// ✅ GET route for photos
-app.get("/photos", async (req, res) => {
-  try {
-    const { seed } = req.query;
-
-    // Step 1 — Validation: only accept if 5 letters + 5 numbers (e.g. abcde12345)
-    const seedRegex = /^[a-zA-Z]{5}\d{5}$/;
-
-    if (!seedRegex.test(seed)) {
-      return res.status(400).json({ error: "Invalid seed format" });
+        document.body.innerHTML = ''; // clear existing content
+        document.body.appendChild(img);
+      } else {
+        console.log("No images found for this seed");
+      }
+    } catch (err) {
+      console.error("Error fetching image:", err);
     }
-
-    // Step 2 — Environment variables (S3 bucket & region)
-    const bucketName = process.env.S3_BUCKET || "tokenride-photos";
-    const region = process.env.AWS_REGION || "eu-north-1";
-
-    // Step 3 — Fixed image pattern (for example: _1, _2, _3)
-    const selectedImages = [
-      `${seed}_1.jpg`,
-      `${seed}_2.jpg`,
-      `${seed}_3.jpg`
-    ];
-
-    // Step 4 — Build public S3 URLs
-    const imageUrls = selectedImages.map(
-      (img) => `https://${bucketName}.s3.${region}.amazonaws.com/${img}`
-    );
-
-    // Step 5 — Send JSON response
-    res.json({ seed, images: imageUrls });
-  } catch (err) {
-    console.error("Error fetching images:", err);
-    res.status(500).json({ error: "Internal server error" });
+  } else {
+    // 🚫 Not from Facebook — show your blog normally
+    console.log("Not a Facebook user, keeping blog visible");
   }
-});
-
-// ✅ Root test route
-app.get("/", (req, res) => {
-  res.send("✅ TokenRide Photo API is live!");
-});
-
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+})();
+</script>
