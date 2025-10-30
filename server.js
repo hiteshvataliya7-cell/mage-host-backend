@@ -10,7 +10,7 @@ const s3Base = "https://tokenride-photos.s3.eu-north-1.amazonaws.com";
 app.get("/photos", async (req, res) => {
   try {
     const seed = req.query.seed;
-    const index = parseInt(req.query.index) || 1; // 🔹 which image number
+    const index = parseInt(req.query.index) || 1;
     const regex = /^[a-zA-Z]{5}\d{5}$/;
 
     if (!seed || !regex.test(seed)) {
@@ -21,15 +21,15 @@ app.get("/photos", async (req, res) => {
     const check = await fetch(imageUrl);
 
     if (check.ok) {
-      return res.json({ seed, image: imageUrl, index });
+      return res.json({ success: true, seed, image: imageUrl, index });
     }
 
-    // fallback (first image if others missing)
+    // fallback (reset to first image)
     const fallbackUrl = `${s3Base}/${seed}_1.jpg`;
-    res.json({ seed, image: fallbackUrl, index: 1 });
+    res.json({ success: true, seed, image: fallbackUrl, index: 1 });
   } catch (err) {
     console.error("❌ Server error:", err);
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ success: false, error: "Internal Server Error" });
   }
 });
 
