@@ -4,11 +4,12 @@ import fetch from "node-fetch";
 const app = express();
 
 const availableImages = [
-  "sample1.jpg",
-  "sample2.jpg",
-  "sample3.jpg",
-  "sample4.jpg",
-  "sample5.jpg",
+  "abcd12345_1.jpg",
+  "abcd12345_2.jpg",
+  "abcd12345_3.jpg",
+  "abcde12345_1.jpg",
+  "default.jpg"
+
 ];
 
 app.get("/photos", async (req, res) => {
@@ -45,3 +46,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () =>
   console.log(`✅ Server running on port ${PORT}`)
 );
+
