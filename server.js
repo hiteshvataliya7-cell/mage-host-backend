@@ -4,58 +4,54 @@ import cors from "cors";
 const app = express();
 app.use(cors());
 
-// ✅ Optional: fallback image list (not mandatory now)
-const availableImages = [
-  "abcd12345_1.jpg",
-  "abcd12345_2.jpg",
-  "abcd12345_3.jpg",
-  "abcde12345_1.jpg",
-  "default.jpg"
-];
+// ✅ Your S3 bucket base URL
+const s3Base = "https://tokenride-photos.s3.eu-north-1.amazonaws.com";
 
-// ✅ Simple hash function (to generate variation per page)
-function generateHash(str) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash << 5) - hash + str.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash);
-}
+// ✅ Available images for each seed (you can add more seeds here)
+const availableImages = {
+  abcde12345: [
+    `${s3Base}/abcde12345_1.jpg`,
+    `${s3Base}/abcde12345_2.jpg`,
+    `${s3Base}/abcde12345_3.jpg`
+  ],
+  abcd12345: [
+    `${s3Base}/abcd12345_1.jpg`,
+    `${s3Base}/abcd12345_2.jpg`,
+    `${s3Base}/abcd12345_3.jpg`
+  ]
+};
 
-// ✅ Main route
+// ✅ Default fallback image (used if no valid image found)
+const defaultImage = `${s3Base}/default.jpg`;
+
 app.get("/photos", async (req, res) => {
   try {
-    const seed = req.query.seed;
-    const page = req.query.page || "default";
+    const { seed, page } = req.query;
     const regex = /^[a-zA-Z]{5}\d{5}$/;
 
+    // 🔹 Validate seed
     if (!seed || !regex.test(seed)) {
-      return res.status(400).json({ error: "Invalid or missing seed" });
+      return res.json({ seed: "default", images: [defaultImage] });
     }
 
-    // ✅ Base S3 folder
-    const s3Base = "https://tokenride-photos.s3.eu-north-1.amazonaws.com";
+    // 🔹 Find seed images
+    const seedImages = availableImages[seed];
 
-    // ✅ Use hash to shift which images are selected
-    const hash = generateHash(seed + page);
-    const startIndex = hash % 3; // only 3 images per seed
+    // 🔹 If seed not found → use fallback
+    if (!seedImages || seedImages.length === 0) {
+      return res.json({ seed, images: [defaultImage] });
+    }
 
-    // ✅ Rotate the 3-image list per page
-    const allSeedImages = [
-      `${s3Base}/${seed}_1.jpg`,
-      `${s3Base}/${seed}_2.jpg`,
-      `${s3Base}/${seed}_3.jpg`
-    ];
+    // 🔹 Determine which image to show based on page path
+    let index = 0;
+    if (page) {
+      const sum = [...page].reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+      index = sum % seedImages.length;
+    }
 
-    // Rotate images based on page hash → different order for each page
-    const rotated = [
-      allSeedImages[startIndex % 3],
-      allSeedImages[(startIndex + 1) % 3],
-      allSeedImages[(startIndex + 2) % 3]
-    ];
+    const selectedImage = seedImages[index] || defaultImage;
+    res.json({ seed, images: [selectedImage] });
 
-    res.json({ seed, page, images: rotated });
   } catch (err) {
     console.error("❌ Server error:", err);
     res.status(500).json({ error: "Internal Server Error" });
