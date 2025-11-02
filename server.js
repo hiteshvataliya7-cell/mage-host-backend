@@ -5,15 +5,18 @@ import AWS from "aws-sdk";
 const app = express();
 app.use(cors());
 
-// ✅ Configure AWS SDK (only need Read permission)
+// Configure AWS SDK (only need Read permission)
 const s3 = new AWS.S3({
   region: "eu-north-1", // your region
 });
 
-// ✅ Your S3 bucket name
+// Your S3 bucket name
 const BUCKET_NAME = "tokenride-photos";
 
-// ✅ Cache image list in memory (refresh every 10 min)
+// Your CloudFront domain for fast global CDN delivery
+const CLOUDFRONT_URL = "https://d1996pn6fkn6q6.cloudfront.net";
+
+// Cache image list in memory (refresh every 10 min)
 let imagePool = [];
 let lastFetch = 0;
 
@@ -28,11 +31,11 @@ async function fetchImagesFromS3() {
     };
     const data = await s3.listObjectsV2(params).promise();
 
-    // Filter .jpg and .jpeg images only
+    // Filter .jpg and .jpeg images only and map to CloudFront URLs
     imagePool = data.Contents
       .map(obj => obj.Key)
       .filter(key => key.toLowerCase().endsWith(".jpg") || key.toLowerCase().endsWith(".jpeg"))
-      .map(key => `https://${BUCKET_NAME}.s3.eu-north-1.amazonaws.com/${key}`);
+      .map(key => `${CLOUDFRONT_URL}/${key}`);
 
     lastFetch = now;
 
@@ -44,7 +47,7 @@ async function fetchImagesFromS3() {
   }
 }
 
-const defaultImage = `https://${BUCKET_NAME}.s3.eu-north-1.amazonaws.com/default.jpg`;
+const defaultImage = `${CLOUDFRONT_URL}/default.jpg`;
 
 app.get("/photos", async (req, res) => {
   try {
